@@ -1,0 +1,199 @@
+Obs podemos usar Promises,async/await para exibir as queries e console.log(xxxx.toQuery()) para saber qual a query está sendo realizada
+
+//RAW- SQL puro 
+database.raw("SELECT * FROM games").then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+})
+
+//INSERT de dados no knex
+var dados =[ 
+  {
+    nome: "PUBG",
+    preco: "179.90"
+  },
+  {
+    nome: "Zelda: Ocarina of Time",
+    preco: "199.90"
+  },
+  {
+    nome: "League of Legends",
+    preco: "0.00"
+}
+]
+
+//podemos insirir um array de dados ou um unico dado
+database.insert({nome:"CupHead",preco:78.90}).into("games").then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+})
+
+//SELECT
+database.select("nome","preco").from("games").then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+})
+
+//NESTED QUERIES (querie dentro de outra querie)
+database.insert({nome:"Valorant",preco:0.00}).into("games").then(data=>{
+    database.select().from("games").then(data=>{
+        console.log(data)
+    })
+}).catch(err=>{
+    console.log(err)
+})
+
+//WHERE
+/* database.select("nome","preco").where({nome:"Valorant"}).orWhere({id:4}).from("games").then(data=>{
+    console.log(data)
+}).catch(err=>{
+console.log(err)
+}) 
+
+//WHERE raw(para fazer uso de : >=,!=,LIKE,etc)
+/* database.select("nome","preco").whereRaw("nome='CupHead' OR preco>185").from("games").then(data=>{
+    console.log(data)
+}).catch(err=>{
+console.log(err)
+}) 
+//Também há outros tipos de where que podem ser chamados um após o outro (como o orWhere)
+
+//DELETE
+database.where({id:6}).delete().table("games").then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+}) 
+
+//UPDATE
+database.where({id:6}).update(
+{   
+    nome:'Horizon Forbidden West 2',
+    preco:249.50
+}
+)
+.table("games")
+.then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+})
+
+//ORDER BY
+database.select().from("games").orderBy("nome","asc").then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+})
+
+//DELETAR TABELA
+database.schema.dropTable("produtoras")
+.then(() => console.log('tabela excluida'))
+.catch((err) => console.log(err))
+
+//CRIAR TABELA
+database.schema.createTable('Filmes', (table) => {
+    table.increments('id');
+    table.string('nome');
+    table.integer('ano')
+    
+   })
+   .then(() => console.log('Tabela criada'))
+   .catch((err) => console.log(err))
+
+   //TABELAS COM PK E FK
+    database.schema.createTable('Cliente', function(table) {
+    table.increments('id').primary()
+    table.string('nome').notNullable()
+    table.string('endereco').notNullable()
+    
+ }).then(() => console.log('Tabela criada')).catch((err) => console.log(err))
+
+ //tabela pedido irá receber uma chave estrangeira de cliente
+ database.schema.createTable('Pedido', function(table) {
+    table.increments('id').primary()
+    table.string('nome').notNullable()
+    table.float('preco').notNullable()
+    table.integer('cliente_id').unsigned().notNullable(); //primeiro criamos a chave estrangeira
+    table.foreign('cliente_id').references('id').inTable('Cliente')//Depois relacionamos as tabelas
+    
+ }).then(() => console.log('Tabela criada')).catch((err) => console.log(err))
+
+
+ //Insert de uma tabela associada a outra
+database.insert({
+    nome:'Riot',
+    game_id: '5'
+}).from('estudio').then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+})
+
+//INNER JOIN
+database.select("games.nome as g_nome","estudio.nome as e_nome","games.preco as g_preco").from("games").innerJoin("estudio","estudio.game_id","games.id").then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+})
+
+database.select("games.*","estudio.nome as estudio_nome").from("games").innerJoin("estudio","estudio.game_id","games.id").then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+})
+
+//INNER JOIN com WHERE
+database.select("games.*","estudio.nome as estudio_nome").from("games").innerJoin("estudio","estudio.game_id","games.id").where("games.id",5).then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+})
+
+// INNER JOIN 1 game feito por mais de 1 estudio
+ database.select("games.*","estudio.nome as estudio_nome").from("games").innerJoin("estudio","estudio.game_id","games.id").where("games.id",9).then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+})  
+
+//Relação N:N para games e estudio
+database.schema.createTable('game-estudio', function(table) {
+    table.increments('id').primary()
+    //ciracao das FK
+    table.integer('game_id').unsigned().notNullable(); 
+    table.integer('estudio_id').unsigned().notNullable(); 
+    //referenciando FKs
+    table.foreign('game_id').references('id').inTable('games')
+    table.foreign('estudio_id').references('id').inTable('estudio')
+    
+    
+ }).then(() => console.log('Tabela criada')).catch((err) => console.log(err))
+
+ //exemplo de consulta tabela N:N
+database.select("estudio.nome as nome_do_estudio","games.nome as nome_do_jogo").from("game-estudio")
+.innerJoin("games","games.id","game-estudio.game_id")
+.innerJoin("estudio","estudio.id","game-estudio.estudio_id")
+.then(data=>{
+    console.log(data)
+}).catch(err=>{
+    console.log(err)
+})
+
+//transações
+async function testeTransacao(){
+     await database.transaction(async trans=>{
+        try{
+            await database.insert({nome:"Sony"}).table("estudio")
+           await database.insert({nome:"EstudioErrado"}).table("estudios")
+           
+        }catch(err){
+            console.log(err)
+        }
+    }
+)}
+testeTransacao()
+
